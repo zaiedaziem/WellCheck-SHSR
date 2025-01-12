@@ -25,6 +25,16 @@
                     <button type="button" class="admin_sidebar_link" id="addUserBtn">Add user</button>
                 </li>
                 <li>
+                    <a th:href="@{/generateUniqueKey}" class="admin_sidebar_link">
+                        Assign Sensor
+                    </a>
+                </li>
+                <li>
+                    <a th:href="@{/admin/sensor-status}" class="admin_sidebar_link">
+                        View Sensor Status
+                    </a>
+                </li>
+                <li>
                     <form th:action="@{/logout}" method="post" th:hidden="true" name="logoutForm">
                         <input type="submit" value="Logout" />
                     </form>
