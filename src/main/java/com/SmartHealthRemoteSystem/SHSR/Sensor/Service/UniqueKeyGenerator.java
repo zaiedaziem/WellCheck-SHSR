@@ -33,8 +33,7 @@ public class UniqueKeyGenerator {
             
             Document keyDoc = new Document()
                 .append("key", uniqueKey)
-                .append("sensorId", null)
-                .append("created", System.currentTimeMillis());
+                .append("sensorId", null);
             
             keyCollection.insertOne(keyDoc);
             logger.info("Generated new unique key: {}", uniqueKey);
