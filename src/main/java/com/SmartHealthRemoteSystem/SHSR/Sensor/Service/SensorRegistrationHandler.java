@@ -82,6 +82,7 @@ public class SensorRegistrationHandler {
             database = MongoDBConnection.connect();
             MongoCollection<Document> sensorCollection = database.getCollection("Sensor");
             MongoCollection<Document> patientCollection = database.getCollection("Patient");
+            MongoCollection<Document> userCollection = database.getCollection("User");
             FindIterable<Document> sensors = sensorCollection.find();
     
             for (Document sensorDoc : sensors) {
@@ -94,13 +95,15 @@ public class SensorRegistrationHandler {
                         uniqueKey,
                         "",  // patientId
                         "N/A", // patientName
-                        null  // sensorId
+                        null,  // sensorId
+                        "-"    // registeredHospital
                     ));
                 } else {
                     // Find patient with matching sensorId
                     FindIterable<Document> patients = patientCollection.find();
                     String patientName = "N/A";
                     String patientId = "";
+                    String registeredHospital = "-";
                     
                     // Iterate through patients to find matching sensorId
                     for (Document patient : patients) {
@@ -109,6 +112,15 @@ public class SensorRegistrationHandler {
                         
                         if (patientInfo != null && sensorId.equals(patientInfo.getString("sensorDataId"))) {
                             patientName = patientInfo.getString("name");
+                            
+                            // Get hospital information from User collection
+                            Document userDoc = userCollection.find(new Document("_id", patientId)).first();
+                            if (userDoc != null) {
+                                Document userInfo = (Document) userDoc.get(patientId);
+                                if (userInfo != null) {
+                                    registeredHospital = userInfo.getString("registeredHospital");
+                                }
+                            }
                             break;
                         }
                     }
@@ -117,7 +129,8 @@ public class SensorRegistrationHandler {
                         uniqueKey,
                         patientId,
                         patientName,
-                        sensorId
+                        sensorId,
+                        registeredHospital
                     ));
                 }
             }

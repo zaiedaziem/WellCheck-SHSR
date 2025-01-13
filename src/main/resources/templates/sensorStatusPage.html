@@ -91,7 +91,7 @@
                             <input type="text" 
                                    id="searchInput" 
                                    class="form-control" 
-                                   placeholder="Search by unique key, sensor ID, or patient name...">
+                                   placeholder="Search by unique key, sensor ID, patient name, or hospital...">
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -112,6 +112,7 @@
                                 <th>Unique Key</th>
                                 <th>Sensor ID</th>
                                 <th>Patient Name</th>
+                                <th>Hospital</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -120,10 +121,12 @@
                                 th:data-key="${status.uniqueKey}"
                                 th:data-sensor="${status.sensorId != null ? status.sensorId : 'Not Assigned'}"
                                 th:data-patient="${status.patientName != null ? status.patientName : 'N/A'}"
+                                th:data-hospital="${status.registeredHospital}"
                                 th:data-status="${status.sensorId == null || status.sensorId == 'Not Assigned' ? 'available' : 'unavailable'}">
                                 <td class="unique-key" th:text="${status.uniqueKey}"></td>
                                 <td th:text="${status.sensorId != null ? status.sensorId : 'Not Assigned'}"></td>
                                 <td th:text="${status.patientName != null ? status.patientName : '-'}"></td>
+                                <td th:text="${status.registeredHospital}"></td>
                                 <td>
                                     <span th:class="${status.sensorId == null || status.sensorId == 'Not Assigned' ? 'status-available' : 'status-unavailable'}"
                                           th:text="${status.sensorId == null || status.sensorId == 'Not Assigned' ? 'Available' : 'Unavailable'}">
@@ -175,12 +178,14 @@
                     const uniqueKey = row.getAttribute('data-key').toLowerCase();
                     const sensorId = row.getAttribute('data-sensor').toLowerCase();
                     const patientName = row.getAttribute('data-patient').toLowerCase();
+                    const hospital = row.getAttribute('data-hospital').toLowerCase();
                     const status = row.getAttribute('data-status');
                     
                     const matchesSearch =
                         uniqueKey.includes(searchTerm) || 
                         sensorId.includes(searchTerm) || 
-                        patientName.includes(searchTerm);
+                        patientName.includes(searchTerm) ||
+                        hospital.includes(searchTerm);
                     
                     const matchesFilter = currentFilter === 'all' || status === currentFilter;
                     
