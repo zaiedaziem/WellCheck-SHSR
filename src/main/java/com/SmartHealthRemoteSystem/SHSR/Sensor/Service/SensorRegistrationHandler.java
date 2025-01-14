@@ -27,7 +27,7 @@ public class SensorRegistrationHandler {
                 new Document("key", uniqueKey)
                     .append("sensorId", null)
             ).first();
-            
+
             if (keyDoc == null) {
                 logger.error("Invalid or already used key: {}", uniqueKey);
                 return new RegistrationResult(false, "Invalid or already used unique key");
@@ -41,18 +41,18 @@ public class SensorRegistrationHandler {
 
             MongoCollection<Document> patientCollection = database.getCollection("Patient");
             Document patient = patientCollection.find(new Document("_id", patientID)).first();
-            
+
             if (patient == null) {
                 logger.error("No patient found for PatientID: {}", patientID);
                 return new RegistrationResult(false, "Patient not found");
             }
-    
+
             // Update patient with sensor ID
             patientCollection.updateOne(
                 new Document("_id", patientID),
                 new Document("$set", new Document(patientID + ".sensorDataId", sensorID))
             );
-    
+
             // Create sensor data document
             MongoCollection<Document> sensorDataCollection = database.getCollection("SensorData");
             Document sensorDataNested = new Document()
@@ -66,7 +66,7 @@ public class SensorRegistrationHandler {
 
             Document sensorDocument = new Document()
                 .append(sensorID, sensorDataNested);
-    
+
             sensorDataCollection.insertOne(sensorDocument);
             return new RegistrationResult(true, null);
         } finally {

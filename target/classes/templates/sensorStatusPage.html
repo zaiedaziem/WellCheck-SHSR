@@ -60,18 +60,35 @@
         }
 
         .filter-btn {
-            margin-right: 10px;
+            margin: 0 5px;
             border-radius: 20px;
             padding: 6px 15px;
+            transition: all 0.3s ease;
         }
 
         .filter-btn.active {
             background-color: #0d6efd;
             color: white;
+            box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
         }
 
         .filter-container {
             margin-bottom: 15px;
+        }
+
+        .filter-group {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .filter-group-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            text-transform: uppercase;
         }
     </style>
 </head>
@@ -82,7 +99,7 @@
             <a th:href="@{/admin}" class="btn btn-secondary">Back</a>
         </div>
         
-        <div class="card">
+        <div class="card shadow-sm">
             <div class="card-header bg-white">
                 <div class="row align-items-center">
                     <div class="col-md-6">
@@ -91,14 +108,24 @@
                             <input type="text" 
                                    id="searchInput" 
                                    class="form-control" 
-                                   placeholder="Search by unique key, sensor ID, patient name, or hospital...">
+                                   placeholder="Search by unique key, sensor ID, patient name...">
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="filter-container text-md-end">
-                            <button class="btn filter-btn active" data-filter="all">All</button>
-                            <button class="btn filter-btn" data-filter="available">Available</button>
-                            <button class="btn filter-btn" data-filter="unavailable">Unavailable</button>
+                        <div class="filter-container">
+                            <div class="filter-group">
+                                <div class="filter-group-label">Status Filter</div>
+                                <button class="btn filter-btn active" data-filter-type="status" data-filter="all">All</button>
+                                <button class="btn filter-btn" data-filter-type="status" data-filter="available">Available</button>
+                                <button class="btn filter-btn" data-filter-type="status" data-filter="unavailable">Unavailable</button>
+                            </div>
+                            <div class="filter-group">
+                                <div class="filter-group-label">Hospital Filter</div>
+                                <button class="btn filter-btn active" data-filter-type="hospital" data-filter="all">All Hospitals</button>
+                                <button class="btn filter-btn" data-filter-type="hospital" data-filter="Hospital A">Hospital A</button>
+                                <button class="btn filter-btn" data-filter-type="hospital" data-filter="Hospital B">Hospital B</button>
+                                <button class="btn filter-btn" data-filter-type="hospital" data-filter="Hospital C">Hospital C</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -120,16 +147,16 @@
                             <tr th:each="status : ${sensorStatuses}" 
                                 th:data-key="${status.uniqueKey}"
                                 th:data-sensor="${status.sensorId != null ? status.sensorId : 'Not Assigned'}"
-                                th:data-patient="${status.patientName != null ? status.patientName : 'N/A'}"
+                                th:data-patient="${status.patientName}"
                                 th:data-hospital="${status.registeredHospital}"
-                                th:data-status="${status.sensorId == null || status.sensorId == 'Not Assigned' ? 'available' : 'unavailable'}">
+                                th:data-availability="${status.sensorId == null ? 'available' : 'unavailable'}">
                                 <td class="unique-key" th:text="${status.uniqueKey}"></td>
                                 <td th:text="${status.sensorId != null ? status.sensorId : 'Not Assigned'}"></td>
                                 <td th:text="${status.patientName != null ? status.patientName : '-'}"></td>
-                                <td th:text="${status.registeredHospital}"></td>
+                                <td th:text="${status.registeredHospital != null ? status.registeredHospital : '-'}"></td>
                                 <td>
-                                    <span th:class="${status.sensorId == null || status.sensorId == 'Not Assigned' ? 'status-available' : 'status-unavailable'}"
-                                          th:text="${status.sensorId == null || status.sensorId == 'Not Assigned' ? 'Available' : 'Unavailable'}">
+                                    <span th:class="${status.sensorId == null ? 'status-available' : 'status-unavailable'}"
+                                          th:text="${status.sensorId == null ? 'Available' : 'Unavailable'}">
                                     </span>
                                 </td>
                             </tr>
@@ -155,14 +182,35 @@
             const noResults = document.getElementById('noResults');
             const filterButtons = document.querySelectorAll('.filter-btn');
             
-            let currentFilter = 'all';
+            let currentFilters = {
+                status: 'all',
+                hospital: 'all'
+            };
+
+            // Debug function
+            function logRowData(row) {
+                console.log({
+                    key: row.getAttribute('data-key'),
+                    sensor: row.getAttribute('data-sensor'),
+                    patient: row.getAttribute('data-patient'),
+                    hospital: row.getAttribute('data-hospital'),
+                    availability: row.getAttribute('data-availability')
+                });
+            }
 
             // Filter button click handler
             filterButtons.forEach(button => {
                 button.addEventListener('click', function() {
-                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    const filterType = this.getAttribute('data-filter-type');
+                    const filterValue = this.getAttribute('data-filter');
+                    
+                    // Remove active class from buttons of the same type
+                    document.querySelectorAll(`.filter-btn[data-filter-type="${filterType}"]`)
+                        .forEach(btn => btn.classList.remove('active'));
+                    
                     this.classList.add('active');
-                    currentFilter = this.getAttribute('data-filter');
+                    currentFilters[filterType] = filterValue;
+                    console.log('Filter changed:', filterType, 'to', filterValue);
                     filterAndSearchTable();
                 });
             });
@@ -171,30 +219,43 @@
             searchInput.addEventListener('input', filterAndSearchTable);
 
             function filterAndSearchTable() {
+                console.log('Applying filters:', currentFilters);
                 const searchTerm = searchInput.value.toLowerCase();
                 let hasResults = false;
                 
                 for (const row of rows) {
+                    // Debug log for each row
+                    logRowData(row);
+
                     const uniqueKey = row.getAttribute('data-key').toLowerCase();
                     const sensorId = row.getAttribute('data-sensor').toLowerCase();
                     const patientName = row.getAttribute('data-patient').toLowerCase();
-                    const hospital = row.getAttribute('data-hospital').toLowerCase();
-                    const status = row.getAttribute('data-status');
+                    const hospital = row.getAttribute('data-hospital');
+                    const availability = row.getAttribute('data-availability');
                     
                     const matchesSearch =
                         uniqueKey.includes(searchTerm) || 
                         sensorId.includes(searchTerm) || 
                         patientName.includes(searchTerm) ||
-                        hospital.includes(searchTerm);
+                        (hospital && hospital.toLowerCase().includes(searchTerm));
                     
-                    const matchesFilter = currentFilter === 'all' || status === currentFilter;
+                    const matchesStatusFilter = currentFilters.status === 'all' || 
+                        availability === currentFilters.status;
                     
-                    if (matchesSearch && matchesFilter) {
-                        row.style.display = '';
-                        hasResults = true;
-                    } else {
-                        row.style.display = 'none';
-                    }
+                    const matchesHospitalFilter = currentFilters.hospital === 'all' || 
+                        hospital === currentFilters.hospital;
+                    
+                    const shouldShow = matchesSearch && matchesStatusFilter && matchesHospitalFilter;
+                    
+                    console.log('Row matches:', {
+                        search: matchesSearch,
+                        status: matchesStatusFilter,
+                        hospital: matchesHospitalFilter,
+                        shouldShow: shouldShow
+                    });
+
+                    row.style.display = shouldShow ? '' : 'none';
+                    if (shouldShow) hasResults = true;
                 }
                 
                 noResults.style.display = hasResults ? 'none' : 'block';
